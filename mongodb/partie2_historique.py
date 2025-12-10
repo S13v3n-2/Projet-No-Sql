@@ -241,22 +241,22 @@ def create_indexes():
     
     return [index1, index2]
 
-def explain_indexes():
-    """Explique l'utilité des index créés"""
-    print("\n=== Explication des index ===")
-    print("\n1. Index sur 'driver_id':")
-    print("   • Accélère les requêtes de type find({'driver_id': 'd1'})")
-    print("   • Utile pour le Travail 2 (historique d'un livreur)")
-    print("   • Évite le scan complet de la collection")
-    print("   • Complexité: O(log n) au lieu de O(n)")
+# def explain_indexes():
+#     """Explique l'utilité des index créés"""
+#     print("\n=== Explication des index ===")
+#     print("\n1. Index sur 'driver_id':")
+#     print("   • Accélère les requêtes de type find({'driver_id': 'd1'})")
+#     print("   • Utile pour le Travail 2 (historique d'un livreur)")
+#     print("   • Évite le scan complet de la collection")
+#     print("   • Complexité: O(log n) au lieu de O(n)")
     
-    print("\n2. Index composé sur 'region' + 'delivery_time':")
-    print("   • Accélère les requêtes filtrant sur la région ET/OU la date")
-    print("   • Utile pour les analyses régionales par période")
-    print("   • Permet de faire des requêtes comme:")
-    print("     - find({'region': 'Paris'})")
-    print("     - find({'region': 'Paris', 'delivery_time': {$gte: date}})")
-    print("   • L'ordre (region, delivery_time) optimise les requêtes sur region seule")
+#     print("\n2. Index composé sur 'region' + 'delivery_time':")
+#     print("   • Accélère les requêtes filtrant sur la région ET/OU la date")
+#     print("   • Utile pour les analyses régionales par période")
+#     print("   • Permet de faire des requêtes comme:")
+#     print("     - find({'region': 'Paris'})")
+#     print("     - find({'region': 'Paris', 'delivery_time': {$gte: date}})")
+#     print("   • L'ordre (region, delivery_time) optimise les requêtes sur region seule")
 
 # ===== TRAVAIL 6 : Synchronisation Redis → MongoDB (Bonus) =====
 def sync_completed_delivery(delivery_data):
@@ -274,26 +274,26 @@ def sync_completed_delivery(delivery_data):
     
     return result.inserted_id
 
-def explain_sync_logic():
-    """Explique la logique de synchronisation Redis → MongoDB"""
-    print("\n=== Logique de synchronisation Redis → MongoDB ===")
-    print("\n1. Quand une livraison se termine dans Redis:")
-    print("   • Événement déclenché: statut passe à 'livrée'")
-    print("   • Récupérer toutes les infos depuis Redis (commande + livreur)")
+# def explain_sync_logic():
+#     """Explique la logique de synchronisation Redis → MongoDB"""
+#     print("\n=== Logique de synchronisation Redis → MongoDB ===")
+#     print("\n1. Quand une livraison se termine dans Redis:")
+#     print("   • Événement déclenché: statut passe à 'livrée'")
+#     print("   • Récupérer toutes les infos depuis Redis (commande + livreur)")
     
-    print("\n2. Construction du document MongoDB:")
-    print("   • command_id, client, driver_id, driver_name")
-    print("   • pickup_time, delivery_time, duration_minutes")
-    print("   • amount, region, rating, review, status")
+#     print("\n2. Construction du document MongoDB:")
+#     print("   • command_id, client, driver_id, driver_name")
+#     print("   • pickup_time, delivery_time, duration_minutes")
+#     print("   • amount, region, rating, review, status")
     
-    print("\n3. Appel de sync_completed_delivery():")
-    print("   • Insère le document dans MongoDB")
-    print("   • Permet de garder l'historique permanent")
+#     print("\n3. Appel de sync_completed_delivery():")
+#     print("   • Insère le document dans MongoDB")
+#     print("   • Permet de garder l'historique permanent")
     
-    print("\n4. Avantages:")
-    print("   • Redis = temps réel (rapide, volatile)")
-    print("   • MongoDB = historique + analyses (persistant)")
-    print("   • Meilleure séparation des responsabilités")
+#     print("\n4. Avantages:")
+#     print("   • Redis = temps réel (rapide, volatile)")
+#     print("   • MongoDB = historique + analyses (persistant)")
+#     print("   • Meilleure séparation des responsabilités")
 
 # ===== MENU PRINCIPAL =====
 def main():
@@ -323,11 +323,11 @@ def main():
         # Travail 5
         print("\n--- TRAVAIL 5 : Gestion des index ---")
         create_indexes()
-        explain_indexes()
+        #explain_indexes()
         
         # Travail 6
         print("\n--- TRAVAIL 6 : Synchronisation Redis → MongoDB ---")
-        explain_sync_logic()
+        #explain_sync_logic()
         
         print("\n" + "=" * 60)
         print("✓ Tous les travaux de la Partie 2 sont terminés!")
@@ -335,7 +335,7 @@ def main():
         print("=" * 60)
         
     except Exception as e:
-        print(f"\n❌ Erreur: {e}")
+        print(f"\nErreur: {e}")
         import traceback
         traceback.print_exc()
 
