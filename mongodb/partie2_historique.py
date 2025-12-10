@@ -298,35 +298,33 @@ def sync_completed_delivery(delivery_data):
 # ===== MENU PRINCIPAL =====
 def main():
     """Menu principal pour tester tous les travaux"""
-    print("=" * 60)
     print("PARTIE 2 : Historique et Analyses avec MongoDB")
-    print("=" * 60)
     
     try:
         # Travail 1
-        print("\n--- TRAVAIL 1 : Importer l'historique ---")
+        print("\n TRAVAIL 1 : Importer l'historique ")
         import_initial_history()
         
         # Travail 2
-        print("\n--- TRAVAIL 2 : Historique d'un livreur ---")
+        print("\n TRAVAIL 2 : Historique d'un livreur ")
         get_driver_history("d1")
         get_driver_stats("d1")
         
         # Travail 3
-        print("\n--- TRAVAIL 3 : Performance par région ---")
+        print("\n TRAVAIL 3 : Performance par région ")
         get_region_performance()
         
         # Travail 4
-        print("\n--- TRAVAIL 4 : Top livreurs ---")
+        print("\n TRAVAIL 4 : Top livreurs ")
         get_top_drivers(2)
         
         # Travail 5
-        print("\n--- TRAVAIL 5 : Gestion des index ---")
+        print("\n TRAVAIL 5 : Gestion des index ")
         create_indexes()
         #explain_indexes()
         
         # Travail 6
-        print("\n--- TRAVAIL 6 : Synchronisation Redis → MongoDB ---")
+        print("\n TRAVAIL 6 : Synchronisation Redis → MongoDB")
         #explain_sync_logic()
         
         print("\n" + "=" * 60)
