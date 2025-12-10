@@ -281,5 +281,5 @@ redis-cli -h <host> -p <port> -a <password>
 
 ## Auteurs
 
-Projet réalisé dans le cadre du cours NoSQL - M1 Data Science EFREI (2024-2025)
+Projet réalisé dans le cadre du cours NoSQL - M1 Data Science EFREI 2025
 
