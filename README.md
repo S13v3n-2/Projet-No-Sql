@@ -1,14 +1,12 @@
-
-cat > README.md << 'EOF'
 # Projet NoSQL - Système de Livraison en Temps Réel
 
 Projet de gestion d'un système de livraison utilisant **Redis** pour le temps réel et **MongoDB** pour l'historique et les analyses.
 
 ## Équipe
 
-- **Ilies IDIR** 
-- **Haci YILMAZER** 
-- **Steven CARLOT** 
+- **Ilies IDIR**
+- **Haci YILMAZER**
+- **Steven CARLOT**
 - **Karima MAHI**
 
 ## Technologies
@@ -16,6 +14,8 @@ Projet de gestion d'un système de livraison utilisant **Redis** pour le temps r
 - **Redis Cloud** - Gestion temps réel (livreurs, commandes, géolocalisation)
 - **MongoDB Atlas** - Historique et analyses des livraisons
 - **Python 3.13** - Langage de développement
+- **Streamlit** - Dashboard interactif
+- **Folium** - Visualisation cartographique
 
 ---
 
@@ -29,6 +29,7 @@ Projet-No-Sql/
 │   ├── partie1_temps_reel.py    # PARTIE 1 : État temps réel (6 travaux)
 │   ├── partie3_avancees.py      # PARTIE 3 : Structures avancées (2 travaux)
 │   ├── partie4_geospatial.py    # PARTIE 4 : Geo-spatial (4 travaux)
+│   ├── partie4_bonus_gui.py     # BONUS : Dashboard interactif Streamlit
 │   └── test_connection.py       # Test connexion Redis
 ├── mongodb/
 │   ├── partie2_historique.py    # PARTIE 2 : Historique et analyses (6 travaux)
@@ -110,6 +111,18 @@ python redis/partie4_geospatial.py
 - Recherche de livreurs dans un rayon (2 km, 3 km)
 - Affectation optimale (3 stratégies : proximité, rating, équilibre)
 - Monitoring des zones de service
+
+#### BONUS : Dashboard Interactif
+```bash
+streamlit run redis/partie4_bonus_gui.py
+```
+
+**Fonctionnalités :**
+- Carte interactive avec positions GPS en temps réel
+- État temps réel des livreurs et alertes
+- Centre de notifications pour livreurs hors zone
+- Détails de la flotte avec distances
+- Simulation et réinitialisation
 
 ---
 
@@ -211,30 +224,6 @@ python mongodb/partie2_historique.py
 
 ---
 
-## Complémentarité Redis + MongoDB
-```
-┌─────────────────────────────────────────┐
-│         APPLICATION WEB/MOBILE           │
-└──────────────┬──────────────────────────┘
-               │
-       ┌───────┴────────┐
-       │                │
-       ▼                ▼
-┌──────────┐     ┌──────────────┐
-│  REDIS   │────▶│   MONGODB    │
-│ (Temps   │     │ (Historique) │
-│  réel)   │     │              │
-└──────────┘     └──────────────┘
-   • Positions       • Analyses
-   • Commandes       • Stats
-   • Cache           • Rapports
-```
-
-**Synchronisation :**
-Quand une livraison est terminée dans Redis → automatiquement archivée dans MongoDB
-
----
-
 ## Tests et Validation
 
 ### Vérification Redis
@@ -286,16 +275,11 @@ redis-cli -h <host> -p <port> -a <password>
 4. **Sharding MongoDB** : Distribution des données
 5. **Redis Cluster** : Haute disponibilité
 6. **API REST** : Exposition des fonctionnalités
-7. **Interface web** : Visualisation temps réel
+7. **Tests unitaires** : Couverture avec pytest
 
 ---
 
 ## Auteurs
 
 Projet réalisé dans le cadre du cours NoSQL - M1 Data Science EFREI (2024-2025)
-
----
-
-## Licence
-
 
