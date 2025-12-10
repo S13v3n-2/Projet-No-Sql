@@ -14,7 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from config.redis_config import REDIS_CONFIG
 except ImportError:
-    # Fallback si l'import échoue (si lancé depuis un autre dossier)
+    # Fallback si l'import échoue
     st.error("Impossible d'importer la config Redis. Vérifiez l'emplacement du fichier.")
     st.stop()
 
@@ -42,10 +42,9 @@ except Exception as e:
 
 def init_demo_data():
     """Réinitialise les positions des livreurs pour la démo"""
-    # Nettoyer la clé
     r.delete("drivers_locations")
 
-    # Positions initiales (D1 proche limite, D2 centre, D3 loin)
+    # Positions initiales
     livreurs_init = [
         ("d1", 2.365, 48.862),  # Paris Centre
         ("d2", 2.378, 48.871),  # Paris Nord
@@ -55,66 +54,48 @@ def init_demo_data():
 
     for lid, lon, lat in livreurs_init:
         r.geoadd("drivers_locations", (lon, lat, lid))
-        # S'assurer que les infos de base existent
         if not r.exists(f"livreur:{lid}"):
             r.hset(f"livreur:{lid}", mapping={"nom": f"Livreur {lid.upper()}", "rating": 4.5})
 
 
 def simuler_deplacement(driver_id, current_lon, current_lat):
-    """
-    Simule un déplacement aléatoire (brownien) pour donner vie à la carte.
-    Dans la vraie vie, ces coordonnées viendraient d'une API GPS mobile.
-    """
-    # Petit déplacement aléatoire
+    """Simule un déplacement aléatoire"""
     delta_lat = (random.random() - 0.5) * VITESSE_SIMULATION
     delta_lon = (random.random() - 0.5) * VITESSE_SIMULATION
 
     new_lon = current_lon + delta_lon
     new_lat = current_lat + delta_lat
 
-    # Mise à jour Redis (Temps réel)
     r.geoadd("drivers_locations", (new_lon, new_lat, driver_id))
     return new_lon, new_lat
 
 
 def get_driver_status():
-    """
-    Récupère positions, calcule distances et génère le statut.
-    """
-    # Ajouter le point central temporairement pour le calcul (si pas présent)
+    """Récupère positions, calcule distances et génère le statut."""
     r.geoadd("ref_points", (CENTRE_PARIS["lon"], CENTRE_PARIS["lat"], "center"))
 
     drivers = r.zrange("drivers_locations", 0, -1)
     data = []
 
     for d in drivers:
-        d_id = d  # Redis retourne le string direct si decode_responses=True
+        d_id = d
 
-        # Ignorer le point central s'il est récupéré dans la liste
         if d_id == "center":
             continue
 
-        # 1. Récupérer position
         pos = r.geopos("drivers_locations", d_id)
         if not pos or not pos[0]:
             continue
         lon, lat = pos[0]
 
-        # 2. Calculer distance au centre
-        # Astuce : on utilise geodist. Si "center" n'est pas dans la clé drivers_locations,
-        # on l'ajoute temporairement pour le calcul.
+        # Calcul distance
         r.geoadd("drivers_locations", (CENTRE_PARIS["lon"], CENTRE_PARIS["lat"], "center"))
         dist = r.geodist("drivers_locations", d_id, "center", unit="km")
 
-        # On ne veut pas garder "center" comme un livreur, on peut le laisser ou le retirer
-        # Pour l'affichage propre, on l'ignorera dans la boucle d'affichage
-
         if dist is None: dist = 0
 
-        # 3. Détection hors zone
+        # Détection hors zone
         is_alert = dist > RAYON_MAX_KM
-
-        # Récupérer info
         nom = r.hget(f"livreur:{d_id}", "nom") or d_id
 
         data.append({
@@ -124,11 +105,10 @@ def get_driver_status():
             "lon": lon,
             "distance": round(dist, 2),
             "status": "🚨 HORS ZONE" if is_alert else "✅ OK",
-            "color": [255, 0, 0, 200] if is_alert else [0, 255, 0, 200],  # Rouge ou Vert
+            "color": [255, 0, 0, 200] if is_alert else [0, 255, 0, 200],
             "size": 200 if is_alert else 100
         })
 
-    # --- CORRECTION ICI : GESTION DU CAS VIDE ---
     if not data:
         return pd.DataFrame(columns=["id", "nom", "lat", "lon", "distance", "status", "color", "size"])
 
@@ -147,13 +127,11 @@ if st.button("Initialiser / Reset Simulation"):
     init_demo_data()
     st.success("Données réinitialisées !")
 
-# Layout
-col_map, col_stats = st.columns([3, 1])
-
-# Placeholder pour l'auto-refresh
+# --- CORRECTION PRINCIPALE ICI ---
+# On ne définit PAS les colonnes ici. On définit seulement le placeholder.
 placeholder = st.empty()
 
-# Boucle de rafraichissement (Simulation du temps réel)
+# Boucle de rafraichissement
 while True:
     # 1. Mise à jour des positions (Simulation backend)
     drivers_list = r.zrange("drivers_locations", 0, -1)
@@ -167,14 +145,22 @@ while True:
     df_drivers = get_driver_status()
 
     # 3. Rendu Graphique
+    # Tout ce qui est dans ce 'with' sera effacé et recréé à chaque boucle
     with placeholder.container():
+
+        # ON CRÉE LES COLONNES ICI, À L'INTÉRIEUR DU CONTAINER
+        col_map, col_stats = st.columns([3, 1])
 
         # --- Colonne de droite : Stats & Alertes ---
         with col_stats:
             st.subheader("📊 État Temps Réel")
 
             nb_drivers = len(df_drivers)
-            nb_alerts = len(df_drivers[df_drivers['status'] == "🚨 HORS ZONE"])
+            # Protection contre le KeyError si le dataframe est vide
+            if 'status' in df_drivers.columns:
+                nb_alerts = len(df_drivers[df_drivers['status'] == "🚨 HORS ZONE"])
+            else:
+                nb_alerts = 0
 
             kpi1, kpi2 = st.columns(2)
             kpi1.metric("Livreurs Actifs", nb_drivers)
@@ -183,31 +169,30 @@ while True:
             st.divider()
             st.write("### 🚨 Centre de Notifications")
 
-            alerts_df = df_drivers[df_drivers['status'] == "🚨 HORS ZONE"]
-            if not alerts_df.empty:
-                for _, row in alerts_df.iterrows():
-                    st.error(f"ALERTE : {row['nom']} est à {row['distance']}km du centre !")
-            else:
-                st.info("Aucune alerte. Tous les livreurs sont dans la zone.")
+            if 'status' in df_drivers.columns:
+                alerts_df = df_drivers[df_drivers['status'] == "🚨 HORS ZONE"]
+                if not alerts_df.empty:
+                    for _, row in alerts_df.iterrows():
+                        st.error(f"ALERTE : {row['nom']} est à {row['distance']}km du centre !")
+                else:
+                    st.info("Aucune alerte. Tous les livreurs sont dans la zone.")
 
             st.divider()
             st.write("### 📋 Détails Flotte")
-            st.dataframe(df_drivers[["nom", "distance", "status"]], hide_index=True)
+            if not df_drivers.empty and 'status' in df_drivers.columns:
+                st.dataframe(df_drivers[["nom", "distance", "status"]], hide_index=True)
 
         # --- Colonne de gauche : Carte PyDeck ---
         with col_map:
-            # Couche : Zone de service (Cercle)
-            # Note: Pydeck gère les cercles en mètres
             layer_zone = pdk.Layer(
                 "ScatterplotLayer",
                 data=[CENTRE_PARIS],
                 get_position=["lon", "lat"],
-                get_color=[0, 100, 255, 30],  # Bleu transparent
+                get_color=[0, 100, 255, 30],
                 get_radius=RAYON_MAX_KM * 1000,
                 pickable=False,
             )
 
-            # Couche : Centre Ville
             layer_center = pdk.Layer(
                 "ScatterplotLayer",
                 data=[CENTRE_PARIS],
@@ -217,7 +202,6 @@ while True:
                 pickable=True,
             )
 
-            # Couche : Livreurs
             layer_drivers = pdk.Layer(
                 "ScatterplotLayer",
                 data=df_drivers,
@@ -228,7 +212,6 @@ while True:
                 auto_highlight=True,
             )
 
-            # Vue initiale
             view_state = pdk.ViewState(
                 latitude=CENTRE_PARIS["lat"],
                 longitude=CENTRE_PARIS["lon"],
@@ -236,7 +219,6 @@ while True:
                 pitch=0,
             )
 
-            # Rendu carte
             st.pydeck_chart(pdk.Deck(
                 map_style=None,
                 initial_view_state=view_state,
