@@ -213,6 +213,111 @@ def travail3_affecter_commande():
     nb_assignee = r.scard("commandes:assignee")
     print(f"\n2. Commandes en attente: {nb_en_attente}, Commandes assignees: {nb_assignee}")
 
+def travail4_afficher_etat():
+    """
+    Travail 4 : Afficher l'etat des commandes et le meilleur livreur
+    """
+    print("\n\n[TRAVAIL 4] Afficher l'etat des commandes")
+    
+    # Commandes en attente
+    commandes_attente = r.smembers("commandes:en_attente")
+    print(f"\nCommandes en attente: {len(commandes_attente)}")
+    print(f"IDs: {commandes_attente}")
+    
+    # Commandes assignees
+    commandes_assignees = r.smembers("commandes:assignee")
+    print(f"\nCommandes assignees: {len(commandes_assignees)}")
+    print(f"IDs: {commandes_assignees}")
+    
+    # Livreur avec le rating maximal
+    meilleur = r.zrevrange("livreurs:ratings", 0, 0, withscores=True)
+    if meilleur:
+        livreur_id, rating = meilleur[0]
+        nom = r.hget(f"livreur:{livreur_id}", "nom")
+        print(f"\nLivreur avec le rating maximal: {livreur_id} ({nom}) - Rating: {rating}")
+
+def travail5_simuler_livraison():
+    """
+    Travail 5 : Simuler la fin d'une livraison
+    
+    Operations :
+    1. Passer le statut a "livree"
+    2. Decrementer les livraisons en cours
+    3. Incrementer les livraisons completees
+    """
+    print("\n\n[TRAVAIL 5] Simuler la fin de la livraison c1 par d3")
+    
+    commande_id = "c1"
+    livreur_id = "d3"
+    
+    # Etat avant
+    statut_avant = r.hget(f"commande:{commande_id}", "statut")
+    en_cours_avant = r.hget(f"livreur:{livreur_id}", "livraisons_en_cours")
+    completees_avant = r.hget(f"livreur:{livreur_id}", "livraisons_completees")
+    print(f"[AVANT] Statut: {statut_avant}, En cours: {en_cours_avant}, Completees: {completees_avant}")
+    
+    # Transaction atomique
+    pipe = r.pipeline()
+    
+    # 1. Mettre a jour le statut de la commande
+    pipe.hset(f"commande:{commande_id}", "statut", "livree")
+    
+    # 2. Deplacer la commande dans le bon set
+    pipe.srem("commandes:assignee", commande_id)
+    pipe.sadd("commandes:livree", commande_id)
+    
+    # 3. Retirer de la liste des commandes du livreur
+    pipe.srem(f"livreur:{livreur_id}:commandes", commande_id)
+    
+    # 4. Decrementer livraisons en cours
+    pipe.hincrby(f"livreur:{livreur_id}", "livraisons_en_cours", -1)
+    
+    # 5. Incrementer livraisons completees
+    pipe.hincrby(f"livreur:{livreur_id}", "livraisons_completees", 1)
+    
+    pipe.execute()
+    
+    print("[OK] Livraison terminee avec succes")
+    
+    # Etat apres
+    statut_apres = r.hget(f"commande:{commande_id}", "statut")
+    en_cours_apres = r.hget(f"livreur:{livreur_id}", "livraisons_en_cours")
+    completees_apres = r.hget(f"livreur:{livreur_id}", "livraisons_completees")
+    print(f"[APRES] Statut: {statut_apres}, En cours: {en_cours_apres}, Completees: {completees_apres}")
+
+def travail6_dashboard():
+    """
+    Travail 6 : Dashboard temps reel du systeme
+    """
+    print("\n\n[TRAVAIL 6] Dashboard temps reel")
+    
+    # Nombre de commandes par statut
+    nb_attente = r.scard("commandes:en_attente")
+    nb_assignee = r.scard("commandes:assignee")
+    nb_livree = r.scard("commandes:livree")
+    
+    print("\n--- Commandes par statut ---")
+    print(f"En attente: {nb_attente}")
+    print(f"Assignees: {nb_assignee}")
+    print(f"Livrees: {nb_livree}")
+    print(f"Total: {nb_attente + nb_assignee + nb_livree}")
+    
+    # Livraisons en cours par livreur
+    print("\n--- Livraisons en cours par livreur ---")
+    tous_livreurs = r.smembers("livreurs:all")
+    for lid in tous_livreurs:
+        nom = r.hget(f"livreur:{lid}", "nom")
+        en_cours = r.hget(f"livreur:{lid}", "livraisons_en_cours")
+        completees = r.hget(f"livreur:{lid}", "livraisons_completees")
+        print(f"{lid} ({nom}): {en_cours} en cours, {completees} completees")
+    
+    # Top 2 meilleurs livreurs
+    print("\n--- Top 2 meilleurs livreurs ---")
+    top2 = r.zrevrange("livreurs:ratings", 0, 1, withscores=True)
+    for livreur_id, rating in top2:
+        nom = r.hget(f"livreur:{livreur_id}", "nom")
+        print(f"{livreur_id} ({nom}) - Rating: {rating}")
+
 if __name__ == "__main__":
     # Nettoyer Redis avant de commencer
     reset_redis()
@@ -221,3 +326,6 @@ if __name__ == "__main__":
     travail1_initialiser_livreurs()
     travail2_gerer_commandes()
     travail3_affecter_commande()
+    travail4_afficher_etat()
+    travail5_simuler_livraison()
+    travail6_dashboard()
