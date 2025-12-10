@@ -104,7 +104,7 @@ def get_driver_status():
             "lat": lat,
             "lon": lon,
             "distance": round(dist, 2),
-            "status": "🚨 HORS ZONE" if is_alert else "✅ OK",
+            "status": " HORS ZONE" if is_alert else "OK",
             "color": [255, 0, 0, 200] if is_alert else [0, 255, 0, 200],
             "size": 200 if is_alert else 100
         })
@@ -119,7 +119,7 @@ def get_driver_status():
 
 st.set_page_config(page_title="Dashboard Livraison Redis", layout="wide")
 
-st.title("🚀 Dashboard Live : Monitoring Livreurs")
+st.title("Dashboard Live : Monitoring Livreurs")
 st.markdown(f"**Zone de service :** {RAYON_MAX_KM} km autour de Paris Centre")
 
 # Bouton de reset
@@ -153,12 +153,12 @@ while True:
 
         # --- Colonne de droite : Stats & Alertes ---
         with col_stats:
-            st.subheader("📊 État Temps Réel")
+            st.subheader(" État Temps Réel")
 
             nb_drivers = len(df_drivers)
             # Protection contre le KeyError si le dataframe est vide
             if 'status' in df_drivers.columns:
-                nb_alerts = len(df_drivers[df_drivers['status'] == "🚨 HORS ZONE"])
+                nb_alerts = len(df_drivers[df_drivers['status'] == " HORS ZONE"])
             else:
                 nb_alerts = 0
 
@@ -167,10 +167,10 @@ while True:
             kpi2.metric("Alertes", nb_alerts, delta_color="inverse", delta=nb_alerts if nb_alerts > 0 else None)
 
             st.divider()
-            st.write("### 🚨 Centre de Notifications")
+            st.write("### Centre de Notifications")
 
             if 'status' in df_drivers.columns:
-                alerts_df = df_drivers[df_drivers['status'] == "🚨 HORS ZONE"]
+                alerts_df = df_drivers[df_drivers['status'] == " HORS ZONE"]
                 if not alerts_df.empty:
                     for _, row in alerts_df.iterrows():
                         st.error(f"ALERTE : {row['nom']} est à {row['distance']}km du centre !")
@@ -178,7 +178,7 @@ while True:
                     st.info("Aucune alerte. Tous les livreurs sont dans la zone.")
 
             st.divider()
-            st.write("### 📋 Détails Flotte")
+            st.write("### Détails Flotte")
             if not df_drivers.empty and 'status' in df_drivers.columns:
                 st.dataframe(df_drivers[["nom", "distance", "status"]], hide_index=True)
 
