@@ -12,7 +12,7 @@ ENV/
 # Configuration sensible
 config/secrets.py
 *.env
-.env
+
 
 # IDE
 .vscode/
