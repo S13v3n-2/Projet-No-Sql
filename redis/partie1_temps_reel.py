@@ -149,6 +149,70 @@ def travail2_gerer_commandes():
         montant = r.hget(f"commande:{cid}", "montant")
         print(f"   - {cid}: {client} -> {destination} ({montant}EUR)")
 
+def travail3_affecter_commande():
+    """
+    Travail 3 : Affecter une commande a un livreur de maniere atomique
+    
+    Operations atomiques :
+    1. Changer le statut de la commande (en_attente -> assignee)
+    2. Enregistrer l'affectation (quelle commande a quel livreur)
+    3. Incrementer le compteur de livraisons en cours du livreur
+    
+    Utilisation d'une transaction Redis (MULTI/EXEC) pour garantir l'atomicite
+    """
+    print("\n\n[TRAVAIL 3] Affecter une commande a un livreur (atomique)")
+    
+    commande_id = "c1"
+    livreur_id = "d3"
+    
+    print(f"\nAffectation de la commande {commande_id} au livreur {livreur_id}")
+    
+    # Verification avant affectation
+    statut_avant = r.hget(f"commande:{commande_id}", "statut")
+    livraisons_avant = r.hget(f"livreur:{livreur_id}", "livraisons_en_cours")
+    print(f"[AVANT] Statut commande: {statut_avant}, Livraisons en cours livreur: {livraisons_avant}")
+    
+    # Transaction atomique avec pipeline
+    pipe = r.pipeline()
+    
+    # 1. Mettre a jour le statut de la commande
+    pipe.hset(f"commande:{commande_id}", "statut", "assignee")
+    pipe.hset(f"commande:{commande_id}", "livreur_id", livreur_id)
+    
+    # 2. Deplacer la commande dans le bon set de statut
+    pipe.srem("commandes:en_attente", commande_id)
+    pipe.sadd("commandes:assignee", commande_id)
+    
+    # 3. Enregistrer l'affectation
+    pipe.sadd(f"livreur:{livreur_id}:commandes", commande_id)
+    
+    # 4. Incrementer le compteur de livraisons en cours
+    pipe.hincrby(f"livreur:{livreur_id}", "livraisons_en_cours", 1)
+    
+    # Executer la transaction
+    pipe.execute()
+    
+    print("[OK] Transaction executee avec succes")
+    
+    # Verification apres affectation
+    statut_apres = r.hget(f"commande:{commande_id}", "statut")
+    livreur_affecte = r.hget(f"commande:{commande_id}", "livreur_id")
+    livraisons_apres = r.hget(f"livreur:{livreur_id}", "livraisons_en_cours")
+    
+    print(f"[APRES] Statut commande: {statut_apres}, Livreur affecte: {livreur_affecte}, Livraisons en cours: {livraisons_apres}")
+    
+    # Demonstration
+    print("\n--- Demonstrations ---")
+    
+    # Commandes assignees au livreur d3
+    commandes_d3 = r.smembers(f"livreur:{livreur_id}:commandes")
+    print(f"\n1. Commandes assignees au livreur {livreur_id}: {commandes_d3}")
+    
+    # Nombre de commandes par statut
+    nb_en_attente = r.scard("commandes:en_attente")
+    nb_assignee = r.scard("commandes:assignee")
+    print(f"\n2. Commandes en attente: {nb_en_attente}, Commandes assignees: {nb_assignee}")
+
 if __name__ == "__main__":
     # Nettoyer Redis avant de commencer
     reset_redis()
@@ -156,3 +220,4 @@ if __name__ == "__main__":
     # Executer les travaux
     travail1_initialiser_livreurs()
     travail2_gerer_commandes()
+    travail3_affecter_commande()
